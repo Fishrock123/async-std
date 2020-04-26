@@ -1,7 +1,5 @@
 use std::fmt;
-use std::sync::atomic::Ordering;
-
-use crate::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// A unique identifier for a task.
 ///
@@ -15,15 +13,16 @@ use crate::sync::atomic::AtomicU64;
 /// })
 /// ```
 #[derive(Eq, PartialEq, Clone, Copy, Hash, Debug)]
-pub struct TaskId(pub(crate) u64);
+pub struct TaskId(pub(crate) usize);
 
 impl TaskId {
     /// Generates a new `TaskId`.
     pub(crate) fn generate() -> TaskId {
-        static COUNTER: AtomicU64 = AtomicU64::new(1);
+        // TODO: find a good version to emulate u64 atomics on 32 bit systems.
+        static COUNTER: AtomicUsize = AtomicUsize::new(1);
 
         let id = COUNTER.fetch_add(1, Ordering::Relaxed);
-        if id > u64::max_value() / 2 {
+        if id > usize::max_value() / 2 {
             std::process::abort();
         }
         TaskId(id)
