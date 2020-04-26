@@ -12,26 +12,31 @@ mod imp {
 #[cfg(any(target_arch = "arm", target_arch = "mips", target_arch = "powerpc"))]
 mod imp {
     use std::sync::atomic::Ordering;
+    use std::sync::Mutex;
 
-    use crossbeam_utils::atomic::AtomicCell;
-
-    pub(crate) struct AtomicU64(AtomicCell<u64>);
+    pub(crate) struct AtomicU64(Mutex<u64>);
 
     impl AtomicU64 {
         pub(crate) const fn new(val: u64) -> Self {
-            Self(AtomicCell::new(val))
+            Self(Mutex::new(val))
         }
 
         pub(crate) fn load(&self, _: Ordering) -> u64 {
-            self.0.load()
+            *self.0.lock().unwrap()
         }
 
         pub(crate) fn fetch_add(&self, val: u64, _: Ordering) -> u64 {
-            self.0.fetch_add(val)
+            let lock = self.0.lock().unwrap();
+            let prev = *lock;
+            *lock += val;
+            prev
         }
 
         pub(crate) fn fetch_sub(&self, val: u64, _: Ordering) -> u64 {
-            self.0.fetch_sub(val)
+            let lock = self.0.lock().unwrap();
+            let prev = *lock;
+            *lock -= val;
+            prev
         }
     }
 }
